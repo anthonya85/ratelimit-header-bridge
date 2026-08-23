@@ -79,6 +79,16 @@ npx tsc
 
 Compiles `src/` to `dist/` per `tsconfig.json`. There's nothing to install.
 
+## Testing
+
+```
+npm test
+```
+
+Builds first, then runs `test/index.test.js` against the compiled output
+with node's built-in test runner (`node:test`). No test framework to
+install.
+
 ## Status
 
 Early. Covers the two header conventions above. See the roadmap for what's
