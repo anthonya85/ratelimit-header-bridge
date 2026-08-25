@@ -71,6 +71,22 @@ response's own `Date` header available, pass that instead — client and
 server clocks can drift enough to make the reset value wrong by a
 noticeable margin.
 
+### Retry-After
+
+`Retry-After` ([RFC 9110 §10.2.3](https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3))
+shows up on `429` responses either alongside the headers above or on its
+own. It carries no limit or remaining count, just a reset delay, and its
+value can be either a number of seconds or an HTTP-date:
+
+```ts
+import { parseRetryAfterHeader, toRetryAfterHeader } from './src/index.js'
+
+parseRetryAfterHeader({ 'Retry-After': '120' }, 1750000000) // 120
+parseRetryAfterHeader({ 'Retry-After': 'Fri, 15 Jun 2025 07:28:00 GMT' }, 1750000000)
+
+toRetryAfterHeader(120) // { 'Retry-After': '120' }
+```
+
 ## Building
 
 ```
@@ -91,5 +107,6 @@ install.
 
 ## Status
 
-Early. Covers the two header conventions above. See the roadmap for what's
-missing.
+Early. Covers the legacy and draft header conventions plus Retry-After.
+Still missing: multiple comma-separated policies in RateLimit-Policy, a CLI
+to pipe `curl -I` output through the converter, and an npm release.

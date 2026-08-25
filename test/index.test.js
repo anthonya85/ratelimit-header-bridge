@@ -10,6 +10,10 @@ import {
   toDraftHeaders,
   legacyToDraft,
   draftToLegacy,
+  parseRetryAfter,
+  formatRetryAfter,
+  parseRetryAfterHeader,
+  toRetryAfterHeader,
 } from '../dist/index.js'
 
 test('parseLegacyHeaders throws when limit is missing', () => {
@@ -154,4 +158,39 @@ test('legacyToDraft and draftToLegacy convert straight through', () => {
     'X-RateLimit-Remaining': '5',
     'X-RateLimit-Reset': '1030',
   })
+})
+
+test('parseRetryAfter reads the delay-seconds form', () => {
+  assert.equal(parseRetryAfter('120', 0), 120)
+})
+
+test('parseRetryAfter reads the HTTP-date form relative to now', () => {
+  const seconds = parseRetryAfter('Thu, 01 Jan 1970 00:02:00 GMT', 60)
+  assert.equal(seconds, 60)
+})
+
+test('parseRetryAfter clamps a date already in the past to zero', () => {
+  const seconds = parseRetryAfter('Thu, 01 Jan 1970 00:00:00 GMT', 60)
+  assert.equal(seconds, 0)
+})
+
+test('parseRetryAfter rejects a value that is neither seconds nor a date', () => {
+  assert.throws(() => parseRetryAfter('soon', 0), /invalid retry-after/)
+})
+
+test('formatRetryAfter rounds and clamps to a non-negative integer string', () => {
+  assert.equal(formatRetryAfter(30.4), '30')
+  assert.equal(formatRetryAfter(-5), '0')
+})
+
+test('parseRetryAfterHeader returns undefined when the header is absent', () => {
+  assert.equal(parseRetryAfterHeader({}, 0), undefined)
+})
+
+test('parseRetryAfterHeader reads the header case-insensitively', () => {
+  assert.equal(parseRetryAfterHeader({ 'retry-after': '45' }, 0), 45)
+})
+
+test('toRetryAfterHeader renders a Retry-After header', () => {
+  assert.deepEqual(toRetryAfterHeader(45), { 'Retry-After': '45' })
 })

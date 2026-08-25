@@ -136,3 +136,35 @@ export function legacyToDraft(headers: HeaderMap, now: number = nowSeconds()): H
 export function draftToLegacy(headers: HeaderMap, now: number = nowSeconds()): HeaderMap {
   return toLegacyHeaders(parseDraftHeaders(headers), now)
 }
+
+/**
+ * Parses a Retry-After value (RFC 9110 §10.2.3), which is either a
+ * delay in whole seconds ("120") or an HTTP-date ("Fri, 31 Dec 1999 23:59:59 GMT").
+ * Unlike the legacy and draft headers, Retry-After carries no limit or
+ * remaining count, so it only ever produces a reset delay.
+ */
+export function parseRetryAfter(raw: string, now: number = nowSeconds()): number {
+  const trimmed = raw.trim()
+  if (/^\d+$/.test(trimmed)) {
+    return Math.max(0, requireNumber(trimmed, 'retry-after'))
+  }
+  const parsedMs = Date.parse(trimmed)
+  if (Number.isNaN(parsedMs)) throw new Error(`invalid retry-after: ${JSON.stringify(raw)}`)
+  return Math.max(0, Math.round(parsedMs / 1000 - now))
+}
+
+/** Formats a reset delay as a Retry-After value, using the delay-seconds form. */
+export function formatRetryAfter(resetSeconds: number): string {
+  return String(Math.max(0, Math.round(resetSeconds)))
+}
+
+/** Reads a Retry-After header, if present, into a reset delay in seconds. */
+export function parseRetryAfterHeader(headers: HeaderMap, now: number = nowSeconds()): number | undefined {
+  const raw = getHeader(headers, 'retry-after')
+  return raw === undefined ? undefined : parseRetryAfter(raw, now)
+}
+
+/** Renders a reset delay as a Retry-After header. */
+export function toRetryAfterHeader(resetSeconds: number): HeaderMap {
+  return { 'Retry-After': formatRetryAfter(resetSeconds) }
+}
