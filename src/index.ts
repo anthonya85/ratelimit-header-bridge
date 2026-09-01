@@ -26,7 +26,10 @@ export interface RateLimitInfo {
   remaining: number
   /** seconds remaining until the window resets, always relative */
   resetSeconds: number
+  /** the first policy, if any were present; a convenience alias for policies[0] */
   policy?: RateLimitPolicy
+  /** every policy from RateLimit-Policy; a server can advertise more than one window at once */
+  policies?: RateLimitPolicy[]
 }
 
 function getHeader(headers: HeaderMap, name: string): string | undefined {
@@ -47,7 +50,28 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-/** Parses a "quota;w=seconds" RateLimit-Policy value. Unknown parameters are ignored. */
+/**
+ * Splits on a separator, but ignores separators inside double-quoted spans,
+ * since policy parameters can carry quoted values (comment="a, b").
+ */
+function splitTopLevel(raw: string, separator: string): string[] {
+  const parts: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (const char of raw) {
+    if (char === '"') inQuotes = !inQuotes
+    if (char === separator && !inQuotes) {
+      parts.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  parts.push(current)
+  return parts
+}
+
+/** Parses a single "quota;w=seconds" policy. Unknown parameters are ignored. */
 function parsePolicy(raw: string): RateLimitPolicy {
   const parts = raw.split(';').map((p) => p.trim())
   const quotaPart = parts[0]
@@ -64,8 +88,17 @@ function parsePolicy(raw: string): RateLimitPolicy {
   return { quota, windowSeconds }
 }
 
+/** Parses a RateLimit-Policy value, which may hold one or more comma-separated policies. */
+function parsePolicies(raw: string): RateLimitPolicy[] {
+  return splitTopLevel(raw, ',').map((part) => parsePolicy(part.trim()))
+}
+
 function formatPolicy(policy: RateLimitPolicy): string {
   return `${policy.quota};w=${policy.windowSeconds}`
+}
+
+function formatPolicies(policies: RateLimitPolicy[]): string {
+  return policies.map(formatPolicy).join(', ')
 }
 
 /**
@@ -112,7 +145,11 @@ export function parseDraftHeaders(headers: HeaderMap): RateLimitInfo {
     resetSeconds: Math.max(0, requireNumber(reset, 'reset')),
   }
   const policy = getHeader(headers, 'ratelimit-policy')
-  if (policy !== undefined) info.policy = parsePolicy(policy)
+  if (policy !== undefined) {
+    const policies = parsePolicies(policy)
+    info.policies = policies
+    info.policy = policies[0]
+  }
   return info
 }
 
@@ -123,7 +160,11 @@ export function toDraftHeaders(info: RateLimitInfo): HeaderMap {
     'RateLimit-Remaining': String(info.remaining),
     'RateLimit-Reset': String(info.resetSeconds),
   }
-  if (info.policy !== undefined) out['RateLimit-Policy'] = formatPolicy(info.policy)
+  if (info.policies !== undefined && info.policies.length > 0) {
+    out['RateLimit-Policy'] = formatPolicies(info.policies)
+  } else if (info.policy !== undefined) {
+    out['RateLimit-Policy'] = formatPolicy(info.policy)
+  }
   return out
 }
 

@@ -61,9 +61,25 @@ inspect or modify the values in between:
 import { parseDraftHeaders, toLegacyHeaders } from './src/index.js'
 
 const info = parseDraftHeaders(draftHeaders)
-// { limit: 100, remaining: 5, resetSeconds: 30, policy: { quota: 100, windowSeconds: 60 } }
+// { limit: 100, remaining: 5, resetSeconds: 30,
+//   policy: { quota: 100, windowSeconds: 60 }, policies: [{ quota: 100, windowSeconds: 60 }] }
 
 const legacy = toLegacyHeaders(info, 1750000000)
+```
+
+`RateLimit-Policy` can list more than one policy, comma-separated, when a
+server enforces several windows at once (a burst limit and a daily quota,
+say). `policies` holds all of them in order; `policy` is a convenience alias
+for `policies[0]`:
+
+```ts
+const info = parseDraftHeaders({
+  'RateLimit-Limit': '1000',
+  'RateLimit-Remaining': '999',
+  'RateLimit-Reset': '30',
+  'RateLimit-Policy': '10;w=1, 1000;w=3600',
+})
+// info.policies === [{ quota: 10, windowSeconds: 1 }, { quota: 1000, windowSeconds: 3600 }]
 ```
 
 `now` defaults to the current time if you don't pass it, but if you have the
@@ -107,6 +123,6 @@ install.
 
 ## Status
 
-Early. Covers the legacy and draft header conventions plus Retry-After.
-Still missing: multiple comma-separated policies in RateLimit-Policy, a CLI
-to pipe `curl -I` output through the converter, and an npm release.
+Early. Covers the legacy and draft header conventions, multiple policies in
+RateLimit-Policy, and Retry-After. Still missing: a CLI to pipe `curl -I`
+output through the converter, and an npm release.

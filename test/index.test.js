@@ -129,6 +129,60 @@ test('parseDraftHeaders ignores unknown policy parameters', () => {
   assert.deepEqual(info.policy, { quota: 60, windowSeconds: 30 })
 })
 
+test('parseDraftHeaders parses multiple comma-separated policies', () => {
+  const info = parseDraftHeaders({
+    'RateLimit-Limit': '60',
+    'RateLimit-Remaining': '1',
+    'RateLimit-Reset': '30',
+    'RateLimit-Policy': '10;w=1, 50;w=60, 1000;w=3600',
+  })
+  assert.deepEqual(info.policies, [
+    { quota: 10, windowSeconds: 1 },
+    { quota: 50, windowSeconds: 60 },
+    { quota: 1000, windowSeconds: 3600 },
+  ])
+  assert.deepEqual(info.policy, { quota: 10, windowSeconds: 1 })
+})
+
+test('parseDraftHeaders keeps a comma inside a quoted policy parameter intact', () => {
+  const info = parseDraftHeaders({
+    'RateLimit-Limit': '60',
+    'RateLimit-Remaining': '1',
+    'RateLimit-Reset': '30',
+    'RateLimit-Policy': '60;w=30;comment="burst, allowed", 1000;w=3600',
+  })
+  assert.deepEqual(info.policies, [
+    { quota: 60, windowSeconds: 30 },
+    { quota: 1000, windowSeconds: 3600 },
+  ])
+})
+
+test('parseDraftHeaders rejects a malformed policy in a multi-policy list', () => {
+  assert.throws(
+    () =>
+      parseDraftHeaders({
+        'RateLimit-Limit': '60',
+        'RateLimit-Remaining': '1',
+        'RateLimit-Reset': '30',
+        'RateLimit-Policy': '10;w=1, unlimited;w=60',
+      }),
+    /invalid policy quota/,
+  )
+})
+
+test('toDraftHeaders renders multiple policies joined by comma-space', () => {
+  const info = {
+    limit: 60,
+    remaining: 1,
+    resetSeconds: 30,
+    policies: [
+      { quota: 10, windowSeconds: 1 },
+      { quota: 1000, windowSeconds: 3600 },
+    ],
+  }
+  assert.equal(toDraftHeaders(info)['RateLimit-Policy'], '10;w=1, 1000;w=3600')
+})
+
 test('toLegacyHeaders and toDraftHeaders round-trip a RateLimitInfo', () => {
   const info = { limit: 60, remaining: 1, resetSeconds: 30, policy: { quota: 60, windowSeconds: 60 } }
   assert.deepEqual(toLegacyHeaders(info, 1000), {
