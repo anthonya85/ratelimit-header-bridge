@@ -5,6 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "ratelimit-bridge": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "tsc && node --test test"

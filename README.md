@@ -103,6 +103,28 @@ parseRetryAfterHeader({ 'Retry-After': 'Fri, 15 Jun 2025 07:28:00 GMT' }, 175000
 toRetryAfterHeader(120) // { 'Retry-After': '120' }
 ```
 
+## CLI
+
+`ratelimit-bridge` reads raw response headers from stdin (whatever `curl -I`
+prints, status line included) and writes the converted rate-limit headers to
+stdout. Direction is auto-detected from whichever convention is present in
+the input; pass `--to=legacy` or `--to=draft` if the input somehow has both.
+
+```
+curl -sI https://api.github.com/users/octocat | npx ratelimit-bridge
+```
+
+```
+RateLimit-Limit: 60
+RateLimit-Remaining: 56
+RateLimit-Reset: 1732
+```
+
+If the response has its own `Date` header, the CLI uses that as `now`
+instead of the local clock, for the same drift reason described above. A
+`Retry-After` header, if present, is converted and included alongside the
+rate-limit headers.
+
 ## Building
 
 ```
@@ -124,5 +146,5 @@ install.
 ## Status
 
 Early. Covers the legacy and draft header conventions, multiple policies in
-RateLimit-Policy, and Retry-After. Still missing: a CLI to pipe `curl -I`
-output through the converter, and an npm release.
+RateLimit-Policy, Retry-After, and a CLI for piping `curl -I` output through
+the converter. Still missing: an npm release.
