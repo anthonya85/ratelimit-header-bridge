@@ -147,4 +147,6 @@ install.
 
 Early. Covers the legacy and draft header conventions, multiple policies in
 RateLimit-Policy, Retry-After, and a CLI for piping `curl -I` output through
-the converter. Still missing: an npm release.
+the converter. `package.json` is now set up for publishing (`files`,
+`exports`, repository metadata); the release itself (`npm publish`) still
+hasn't happened.

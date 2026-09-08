@@ -5,12 +5,41 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "bin": {
     "ratelimit-bridge": "dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node --test test"
+    "test": "tsc && node --test test",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "rate-limit",
+    "ratelimit",
+    "http-headers",
+    "ietf",
+    "x-ratelimit",
+    "retry-after"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anthonya85/ratelimit-header-bridge.git"
+  },
+  "homepage": "https://github.com/anthonya85/ratelimit-header-bridge#readme",
+  "bugs": {
+    "url": "https://github.com/anthonya85/ratelimit-header-bridge/issues"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "license": "MIT",
   "author": "anthonya85",
