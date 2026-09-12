@@ -45,7 +45,6 @@ const draftHeaders = {
   'RateLimit-Policy': '100;w=60',
 }
 
-const info = parseLegacyHeaders // (not used here, just showing the shape)
 const legacy = draftToLegacy(draftHeaders, 1750000000)
 // {
 //   'X-RateLimit-Limit': '100',

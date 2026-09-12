@@ -57,6 +57,19 @@ test('fails with a clear error when no rate-limit headers are present', () => {
   assert.match(result.stderr, /no X-RateLimit-\* or RateLimit-\* headers found/)
 })
 
+test('a repeated header under a different casing uses the later value', () => {
+  const input = [
+    'X-RateLimit-Remaining: 10',
+    'x-ratelimit-remaining: 5',
+    'X-RateLimit-Limit: 60',
+    'X-RateLimit-Reset: 60',
+    '',
+  ].join('\n')
+  const result = runCli(input)
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /RateLimit-Remaining: 5\n/)
+})
+
 test('fails when both legacy and draft headers are present without --to', () => {
   const input = [
     'X-RateLimit-Limit: 60',

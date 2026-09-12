@@ -29,9 +29,14 @@ function readStdin(): Promise<string> {
  * Turns raw header text (as curl -I prints it, status line and all) into a
  * HeaderMap. Later occurrences of a repeated header win, since that matches
  * how most HTTP clients expose a duplicated header as a single value anyway.
+ * Matching is case-insensitive on the header name (a redirect chain can
+ * hand back the same header with different casing at each hop), so a later
+ * line replaces the earlier key entirely rather than sitting alongside it
+ * under a differently-cased key.
  */
 function parseRawHeaders(raw: string): HeaderMap {
   const headers: HeaderMap = {}
+  const keyByLowerName = new Map<string, string>()
   for (const line of raw.split('\n')) {
     const trimmed = line.replace(/\r$/, '')
     if (trimmed === '' || trimmed.startsWith('HTTP/')) continue
@@ -39,7 +44,12 @@ function parseRawHeaders(raw: string): HeaderMap {
     if (colon === -1) continue
     const name = trimmed.slice(0, colon).trim()
     const value = trimmed.slice(colon + 1).trim()
-    if (name !== '') headers[name] = value
+    if (name === '') continue
+    const lower = name.toLowerCase()
+    const existingKey = keyByLowerName.get(lower)
+    if (existingKey !== undefined) delete headers[existingKey]
+    headers[name] = value
+    keyByLowerName.set(lower, name)
   }
   return headers
 }
