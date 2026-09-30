@@ -18,7 +18,7 @@ library only.
 ## Usage
 
 ```ts
-import { legacyToDraft, draftToLegacy, parseLegacyHeaders } from './src/index.js'
+import { legacyToDraft, draftToLegacy, parseLegacyHeaders } from 'ratelimit-header-bridge'
 
 // Converting a response you received in the legacy format:
 const upstream = {
@@ -57,7 +57,7 @@ Both directions go through a normalized `RateLimitInfo` shape if you want to
 inspect or modify the values in between:
 
 ```ts
-import { parseDraftHeaders, toLegacyHeaders } from './src/index.js'
+import { parseDraftHeaders, toLegacyHeaders } from 'ratelimit-header-bridge'
 
 const info = parseDraftHeaders(draftHeaders)
 // { limit: 100, remaining: 5, resetSeconds: 30,
@@ -94,7 +94,7 @@ own. It carries no limit or remaining count, just a reset delay, and its
 value can be either a number of seconds or an HTTP-date:
 
 ```ts
-import { parseRetryAfterHeader, toRetryAfterHeader } from './src/index.js'
+import { parseRetryAfterHeader, toRetryAfterHeader } from 'ratelimit-header-bridge'
 
 parseRetryAfterHeader({ 'Retry-After': '120' }, 1750000000) // 120
 parseRetryAfterHeader({ 'Retry-After': 'Fri, 15 Jun 2025 07:28:00 GMT' }, 1750000000)
@@ -138,14 +138,15 @@ Compiles `src/` to `dist/` per `tsconfig.json`. There's nothing to install.
 npm test
 ```
 
-Builds first, then runs `test/index.test.js` against the compiled output
-with node's built-in test runner (`node:test`). No test framework to
-install.
+Builds first, then runs the files in `test/` (the library and the CLI)
+against the compiled output with node's built-in test runner (`node:test`).
+No test framework to install.
 
 ## Status
 
 Early. Covers the legacy and draft header conventions, multiple policies in
 RateLimit-Policy, Retry-After, and a CLI for piping `curl -I` output through
-the converter. `package.json` is now set up for publishing (`files`,
-`exports`, repository metadata); the release itself (`npm publish`) still
-hasn't happened.
+the converter. `package.json` is set up for publishing (`files`, `exports`,
+repository metadata, a `prepublishOnly` test run). The release itself
+(`npm publish`) still hasn't happened, so the package name in the examples
+above won't resolve from the registry yet.
